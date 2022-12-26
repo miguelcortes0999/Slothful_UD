@@ -135,7 +135,7 @@ class Secuenciacion():
                     duraciones.append(self.tareas[tar][maq])
                     maquinas.append(maq.split('_')[0])
             ax.barh(maquinas, duraciones, left=inicios, label=tareas)
-        plt.legend()
+        plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left')
         plt.show()
 
 # FIN-MODELO DE SECUENCIACION

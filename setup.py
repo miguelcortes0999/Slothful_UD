@@ -3,10 +3,10 @@ from setuptools import find_packages, setup
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = '0.0.1' #Muy importante, deberéis ir cambiando la versión de vuestra librería según incluyáis nuevas funcionalidades
+VERSION = '0.0.2' #Muy importante, deberéis ir cambiando la versión de vuestra librería según incluyáis nuevas funcionalidades
 PACKAGE_NAME = 'Slothful_UD' #Debe coincidir con el nombre de la carpeta 
-AUTHOR = 'Miguel Cortes - Miguel Miranda - Eduyn Lopez'
-AUTHOR_EMAIL = 'miguelcortes0999@gmail.com - '
+AUTHOR = 'miguelcortes0999'
+AUTHOR_EMAIL = 'miguelcortes0999@gmail.com'
 URL = 'https://github.com/miguelcortes0999/Industrial-Engineering' #Modificar con vuestros datos
 
 LICENSE = 'GNU General Public License v3.0'

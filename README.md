@@ -1,4 +1,4 @@
-# Industrial-Engineering
+# Slothful_UD
 
 Este software está pensado para la optimización de algoritmos referentes a Ingeniería Industrial, se busca como solución al no encontrar una librería elaborado en python que cumpla con la tematica, ademas las pocas funciones ya programadas se encuentran dispersas en muchos módulos que dificultan el uso,
 

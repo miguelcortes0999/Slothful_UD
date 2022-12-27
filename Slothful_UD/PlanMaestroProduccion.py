@@ -1,15 +1,13 @@
 # INICIO-MODELO DE SECUENCIACION
-
 #Improtar librerias necesarias
-from os import system
 from itertools import combinations
 from random import choice
 from pulp import *
 from gurobipy import *
 import matplotlib.pyplot as plt
 
-# Creacion de clase
-class Secuenciacion():
+# Creacion de clase 
+class SecuenciacionProgramacionLineal():
     # Inicializar variables
     def __init__(self, tareas:dict):
         '''
@@ -137,6 +135,6 @@ class Secuenciacion():
             ax.barh(maquinas, duraciones, left=inicios, label=tareas)
         plt.legend(bbox_to_anchor=(1.02, 1.0), loc='upper left')
         plt.show()
-
 # FIN-MODELO DE SECUENCIACION
+
 

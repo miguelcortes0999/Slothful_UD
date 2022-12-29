@@ -1,9 +1,8 @@
 #Improtar librerias necesarias
+import matplotlib.pyplot as plt
 from itertools import combinations
-from random import choice
 from pulp import *
 from gurobipy import *
-import matplotlib.pyplot as plt
 
 # Creacion de clase Modelo Secuenciacion Programacion Lineal
 class SecuenciacionProgramacionLineal():
@@ -250,3 +249,46 @@ class BalanceoLienaProgramacionLineal():
                 nombre = nombre.split(',')
                 self.ActivacionEstacion[nombre[0]] = 'Estacion '+ str(int(nombre[1])+1)
         return self.ActivacionEstacion
+
+# Creacion de clase Balnceo Linea Progrmacion Lineal
+class SecuenciacionReglaJhonson():
+    def __init__(self, tareas):
+        self.tareas = tareas
+        self.nombresTareas = list(self.tareas.keys())
+        self.nombresMaquinas = list(list(self.tareas.values())[0].keys())
+        self.Solucionar()
+    
+    def Solucionar(self):
+        self.seceuncia = []
+        while self.tareas != {} :
+            self.maximo = list(list(self.tareas.values())[0].values())[0]
+            for tarea in self.tareas.keys():
+                for maquina in self.nombresMaquinas:
+                    if self.tareas[tarea][maquina] < self.maximo:
+                        self.maximo = self.tareas[tarea][maquina]
+            print(self.maximo)
+            asignacion= []
+            for tarea in self.tareas.keys():
+                if self.tareas[tarea][self.nombresMaquinas[0]] == self.maximo:
+                    asignacion.append([tarea,'I'])
+                if self.tareas[tarea][self.nombresMaquinas[1]] == self.maximo:
+                    asignacion.append([tarea,'F'])
+            print(asignacion)
+            tareas = list(set([tarea[0] for tarea in asignacion]))
+            print(tareas)
+            for tarea in tareas:
+                self.tareas.pop(tarea)
+            self.seceuncia.append(asignacion)
+        print(self.seceuncia)
+
+
+tareas = {'T1': {'M1':12, 'M2':19},
+          'T2': {'M1':15, 'M2':19},
+          'T3': {'M1':14, 'M2':13},
+          'T4': {'M1':7 , 'M2':9 },
+          'T5': {'M1':15, 'M2':20},
+          'T6': {'M1':11, 'M2':13},
+          'T7': {'M1':19, 'M2':10},
+          'T8': {'M1':12, 'M2':13}}
+
+SecuenciacionReglaJhonson(tareas)

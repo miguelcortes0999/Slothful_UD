@@ -1,6 +1,7 @@
 #Improtar librerias necesarias
 import matplotlib.pyplot as plt
 from itertools import combinations
+from itertools import permutations
 from pulp import *
 from gurobipy import *
 
@@ -256,31 +257,53 @@ class SecuenciacionReglaJhonson():
         self.tareas = tareas
         self.nombresTareas = list(self.tareas.keys())
         self.nombresMaquinas = list(list(self.tareas.values())[0].keys())
-        self.Solucionar()
+        self.EncontrarCombinaciones()
+        self.CalcularPosibilidades()
+        self.CalcularSecuencias()
     
-    def Solucionar(self):
-        self.seceuncia = []
+    def EncontrarCombinaciones(self):
+        self.Combinaciones = []
         while self.tareas != {} :
             self.maximo = list(list(self.tareas.values())[0].values())[0]
             for tarea in self.tareas.keys():
                 for maquina in self.nombresMaquinas:
                     if self.tareas[tarea][maquina] < self.maximo:
                         self.maximo = self.tareas[tarea][maquina]
-            print(self.maximo)
-            asignacion= []
+            asignacion = []
             for tarea in self.tareas.keys():
                 if self.tareas[tarea][self.nombresMaquinas[0]] == self.maximo:
                     asignacion.append([tarea,'I'])
                 if self.tareas[tarea][self.nombresMaquinas[1]] == self.maximo:
                     asignacion.append([tarea,'F'])
-            print(asignacion)
             tareas = list(set([tarea[0] for tarea in asignacion]))
-            print(tareas)
             for tarea in tareas:
                 self.tareas.pop(tarea)
-            self.seceuncia.append(asignacion)
-        print(self.seceuncia)
+            self.Combinaciones.append(asignacion)
 
+    def CalcularPosibilidades(self):
+        self.SecuenciasPosibles = [[]]
+        for combinacion in self.Combinaciones:
+            permutaciones = list(permutations(combinacion,len(combinacion)))
+            for i in range(len(permutaciones)):
+                permutaciones[i] = list(permutaciones[i])
+            aux=[]
+            for secuancia in self.SecuenciasPosibles:
+                for posibilidad in permutaciones:
+                    aux.append(secuancia+posibilidad)
+            self.SecuenciasPosibles = aux
+
+    def CalcularSecuencias(self):
+        self.Secuencias = []
+        for secuencia in self.SecuenciasPosibles:
+            inicio = []
+            fin = []
+            for tarea in secuencia:
+                if tarea[1]=='F':
+                    fin.insert(0, tarea[0])
+                else:
+                    inicio.append(tarea[0])
+            self.Secuencias.append(inicio+fin)
+        return self.Secuencias
 
 tareas = {'T1': {'M1':12, 'M2':19},
           'T2': {'M1':15, 'M2':19},
@@ -291,4 +314,6 @@ tareas = {'T1': {'M1':12, 'M2':19},
           'T7': {'M1':19, 'M2':10},
           'T8': {'M1':12, 'M2':13}}
 
-SecuenciacionReglaJhonson(tareas)
+var = SecuenciacionReglaJhonson(tareas)
+for sec in var.CalcularSecuencias():
+    print(sec)

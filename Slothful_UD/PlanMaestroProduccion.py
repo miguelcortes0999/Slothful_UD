@@ -254,6 +254,7 @@ class BalanceoLienaProgramacionLineal():
 # Creacion de clase Secuenciacion Regla de Jhonson
 class SecuenciacionReglaJhonson():
     def __init__(self, tareas):
+        self.tareasBase = tareas
         if len(tareas[list(tareas.keys())[0]])==2:
             self.tareas = tareas
         elif len(tareas[list(tareas.keys())[0]])==3:
@@ -270,7 +271,9 @@ class SecuenciacionReglaJhonson():
         self.EncontrarCombinaciones()
         self.CalcularPosibilidades()
         self.CalcularSecuencias()
-    
+        self.CalcularTiemposSecuencias()
+
+    # Encontrar combinaciones posibles segun regla de Jhonson
     def EncontrarCombinaciones(self):
         self.Combinaciones = []
         while self.tareas != {} :
@@ -289,7 +292,9 @@ class SecuenciacionReglaJhonson():
             for tarea in tareas:
                 self.tareas.pop(tarea)
             self.Combinaciones.append(asignacion)
+        return self.Combinaciones
 
+    # Calcular posibles combinaciones segun orden calculado
     def CalcularPosibilidades(self):
         self.SecuenciasPosibles = [[]]
         for combinacion in self.Combinaciones:
@@ -301,7 +306,9 @@ class SecuenciacionReglaJhonson():
                 for posibilidad in permutaciones:
                     aux.append(secuancia+posibilidad)
             self.SecuenciasPosibles = aux
+        return self.SecuenciasPosibles 
 
+    # Calcular cada una de las seceuncias a partir de combinaciones de posibilidades
     def CalcularSecuencias(self):
         self.Secuencias = []
         for secuencia in self.SecuenciasPosibles:
@@ -314,4 +321,28 @@ class SecuenciacionReglaJhonson():
                     inicio.append(tarea[0])
             self.Secuencias.append(inicio+fin)
         return self.Secuencias
-    
+
+    # Calcular tiempo de cada combinacion de posibilidad
+    def CalcularTiemposSecuencias(self):
+        self.TiemposProcesosSecuencias = []
+        for secuencia in self.Secuencias:
+            self.TiemposProcesosSecuencias.append(self.CalcularTiempoProceso(secuencia))
+        return self.TiemposProcesosSecuencias   
+
+    # Calcularas tiempo de proceso para cada secuencia
+    def CalcularTiempoProceso(self, secuencia):
+        duraciones = []
+        for tarea in secuencia:
+            duraciones.append([j for j in self.tareasBase[tarea].values()])
+        matriz = [ [0 for j in i] for i in self.tareasBase.values()]
+        for i in range(len(matriz)):
+            for j in range(len(matriz[i])):
+                if i==0 and j==0:
+                    matriz[i][j] = duraciones[i][j]
+                elif i==0:
+                    matriz[i][j] = matriz[i][j-1] + duraciones[i][j]
+                elif j==0:
+                    matriz[i][j] = matriz[i-1][j] + duraciones[i][j]
+                else:
+                    matriz[i][j] = max([matriz[i][j-1],matriz[i-1][j]]) + duraciones[i][j]
+        return matriz[i][j]

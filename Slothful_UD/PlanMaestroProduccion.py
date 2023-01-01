@@ -251,12 +251,22 @@ class BalanceoLienaProgramacionLineal():
                 self.ActivacionEstacion[nombre[0]] = 'Estacion '+ str(int(nombre[1])+1)
         return self.ActivacionEstacion
 
-# Creacion de clase Balnceo Linea Progrmacion Lineal
+# Creacion de clase Secuenciacion Regla de Jhonson
 class SecuenciacionReglaJhonson():
     def __init__(self, tareas):
-        self.tareas = tareas
+        if len(tareas[list(tareas.keys())[0]])==2:
+            self.tareas = tareas
+        elif len(tareas[list(tareas.keys())[0]])==3:
+            self.tareas={}
+            maquinas = list(tareas[list(tareas.keys())[0]].keys())
+            for tarea in tareas.keys():
+                self.tareas[tarea] = {maquinas[0]+'-'+maquinas[1]:tareas[tarea][maquinas[0]]+tareas[tarea][maquinas[1]],
+                maquinas[1]+'-'+maquinas[2]:tareas[tarea][maquinas[1]]+tareas[tarea][maquinas[2]]}
+        else:
+            raise 'El numero de tareas excede las 3 posibles que soluciona regla de Jhonson'
         self.nombresTareas = list(self.tareas.keys())
         self.nombresMaquinas = list(list(self.tareas.values())[0].keys())
+        print(self.tareas)
         self.EncontrarCombinaciones()
         self.CalcularPosibilidades()
         self.CalcularSecuencias()
@@ -304,16 +314,4 @@ class SecuenciacionReglaJhonson():
                     inicio.append(tarea[0])
             self.Secuencias.append(inicio+fin)
         return self.Secuencias
-
-tareas = {'T1': {'M1':12, 'M2':19},
-          'T2': {'M1':15, 'M2':19},
-          'T3': {'M1':14, 'M2':13},
-          'T4': {'M1':7 , 'M2':9 },
-          'T5': {'M1':15, 'M2':20},
-          'T6': {'M1':11, 'M2':13},
-          'T7': {'M1':19, 'M2':10},
-          'T8': {'M1':12, 'M2':13}}
-
-var = SecuenciacionReglaJhonson(tareas)
-for sec in var.CalcularSecuencias():
-    print(sec)
+    

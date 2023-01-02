@@ -10,21 +10,21 @@ class SecuenciacionProgramacionLineal():
     # Inicializar variables
     def __init__(self, tareas:dict):
         '''
-        SecuenciacionProgramacionLineal(tareas: dict)
+        SecuenciacionProgramacionLineal(tareas: dict[str ,dict[float, ..., float]])\n
         tareas: diccionario de key:tareas value:diccionarios de maquinas con duraciones 
         de cada tarea respectiva en la maquina, en caso de estar repetida la maquina en
         el proceso se debe agregar el nombre de la maquinaseguido de raya al piso y el 
         numero de la priorida, se debe ingresar en el diccionario de cada tarea las 
         maquinas en el orden que van a ser procesados
         Ejemplo:\n
-        {'T1' : { 'M1':5  , 'M2':7   , 'M3':7   },\n
-        'T2' : { 'M1_1':3 , 'M2_1':7 , 'M1_2':2  , 'M2_2':7 },\n
-        'T3' : { 'M3_1':5 , 'M2':8   , 'M3_2':9 },\n
-        'T4' : { 'M1':4   , 'M2':7   , 'M3':6   },\n
-        'T5' : { 'M2_1':5 , 'M1':6   , 'M2_2':7  , 'M3':2 },\n
-        'T6' : { 'M1':8   , 'M3':5   , 'M2':4   },\n
-        'T7' : { 'M3_1':9 , 'M2':2   , 'M1':5    , 'M3_2':5 },\n
-        'T8' : { 'M2_1':3 , 'M3':4   , 'M2_2':1 }}\n
+        tareas={'T1' : { 'M1':5  , 'M2':7   , 'M3':7   },\n
+                'T2' : { 'M1_1':3 , 'M2_1':7 , 'M1_2':2  , 'M2_2':7 },\n
+                'T3' : { 'M3_1':5 , 'M2':8   , 'M3_2':9 },\n
+                'T4' : { 'M1':4   , 'M2':7   , 'M3':6   },\n
+                'T5' : { 'M2_1':5 , 'M1':6   , 'M2_2':7  , 'M3':2 },\n
+                'T6' : { 'M1':8   , 'M3':5   , 'M2':4   },\n
+                'T7' : { 'M3_1':9 , 'M2':2   , 'M1':5    , 'M3_2':5 },\n
+                'T8' : { 'M2_1':3 , 'M3':4   , 'M2_2':1 }}\n
         '''
         self.modelo = LpProblem("modelo_secuanciacion_maquinas", sense=LpMinimize)
         self.M = 0
@@ -139,7 +139,7 @@ class SecuenciacionProgramacionLineal():
 class BalanceoLienaProgramacionLineal():
     def __init__(self, tareas, produccionDiaraDeseada, produccionDiaraActual):
         '''
-        BalanceoLienaProgramacionLineal(tareas: dict[str, list], produccionDiaraDeseada: int, produccionDiaraActual: int)\n
+        BalanceoLienaProgramacionLineal(tareas: dict[str, list[float, str]], produccionDiaraDeseada: int, produccionDiaraActual: int)\n
         Enviar diccionario con nombre de cada tarea como llave, y cada valor debe ser una lista en la cual el primer valor debe ser
         un valor tipo int o float que representara el tiempo en SEGUNDOS de la tarea, y en la siguiente posicion de la lista un str
         con el nombre del predecesor, en caso de ser mas de un predecesor separarlos con el simbolo '-', es decir es un simbolo reservado 
@@ -253,6 +253,24 @@ class BalanceoLienaProgramacionLineal():
 
 # Creacion de clase Secuenciacion Regla de Jhonson
 class SecuenciacionReglaJhonson():
+    '''
+    SecuenciacionReglaJhonson(tareas: dict[str ,dict[str:float, str:float, str:float]])\n
+    Aplicacion de la regla de Jonson, para esto se debe enviar un diccioanrio de diccioanrios
+    de la siguiente forma, tareas: diccionario de key:tareas value:diccionarios de maquinas con duraciones 
+    de cada tarea respectiva en la maquina, en este caso no todas las tareas deben ser procesadas en el mismo
+    orden en a traves de cada una de las maquinas, esta heuristica acepta menor o igual a 3 maquinas
+    Ejemplo:\n
+    tareas={'T1' :{'M1':3,'M2':7,'M3':3},\n
+            'T2' :{'M1':1,'M2':4,'M3':9},\n
+            'T3' :{'M1':7,'M2':6,'M3':3},\n
+            'T4' :{'M1':2,'M2':3,'M3':1},\n
+            'T5' :{'M1':3,'M2':2,'M3':4},\n
+            'T6' :{'M1':1,'M2':8,'M3':7},\n
+            'T7' :{'M1':9,'M2':1,'M3':8},\n
+            'T8' :{'M1':1,'M2':5,'M3':8},\n
+            'T9' :{'M1':8,'M2':2,'M3':9},\n
+            'T10':{'M1':6,'M2':1,'M3':7}}
+    '''
     def __init__(self, tareas):
         self.tareasBase = tareas
         if len(tareas[list(tareas.keys())[0]])==2:
@@ -286,7 +304,7 @@ class SecuenciacionReglaJhonson():
             for tarea in self.tareas.keys():
                 if self.tareas[tarea][self.nombresMaquinas[0]] == self.maximo:
                     asignacion.append([tarea,'I'])
-                if self.tareas[tarea][self.nombresMaquinas[1]] == self.maximo:
+                elif self.tareas[tarea][self.nombresMaquinas[1]] == self.maximo:
                     asignacion.append([tarea,'F'])
             tareas = list(set([tarea[0] for tarea in asignacion]))
             for tarea in tareas:
@@ -329,7 +347,7 @@ class SecuenciacionReglaJhonson():
             self.TiemposProcesosSecuencias.append(self.CalcularTiempoProceso(secuencia))
         return self.TiemposProcesosSecuencias   
 
-    # Calcularas tiempo de proceso para cada secuencia
+    # Calcular tiempo de proceso para cada secuencia
     def CalcularTiempoProceso(self, secuencia):
         duraciones = []
         for tarea in secuencia:
@@ -346,3 +364,129 @@ class SecuenciacionReglaJhonson():
                 else:
                     matriz[i][j] = max([matriz[i][j-1],matriz[i-1][j]]) + duraciones[i][j]
         return matriz[i][j]
+
+SecuenciacionReglaJhonson()
+
+# Creacion de clase Secuenciacion Regla CDS
+class SecuenciacionReglaCDS():
+    def __init__(self, tareas):
+        '''
+        SecuenciacionReglaCDS(tareas: dict[str ,dict[str:float, ..., str:float]])\n
+        Aplicacion de la regla de CDS, para esto se debe enviar un diccioanrio de diccioanrios
+        de la siguiente forma, tareas: diccionario de key:tareas value:diccionarios de maquinas con duraciones 
+        de cada tarea respectiva en la maquina, en este caso no todas las tareas deben ser procesadas en el mismo
+        orden en a traves de cada una de las maquinas, esta heuristica acepta igual o mayor a 3 maquinas,
+        solo que aplicara la misma regla de Jhonson
+        Ejemplo:\n
+        tareas={'T1' :{'M1':3,'M2':7,'M3':3,'M4':3},\n
+                'T2' :{'M1':1,'M2':4,'M3':9,'M4':9},\n
+                'T3' :{'M1':7,'M2':6,'M3':3,'M4':1},\n
+                'T4' :{'M1':2,'M2':3,'M3':1,'M4':7},\n
+                'T5' :{'M1':3,'M2':2,'M3':4,'M4':2},\n
+                'T6' :{'M1':1,'M2':8,'M3':7,'M4':9},\n
+                'T7' :{'M1':9,'M2':1,'M3':8,'M4':4},\n
+                'T8' :{'M1':1,'M2':5,'M3':8,'M4':1},\n
+                'T9' :{'M1':8,'M2':2,'M3':9,'M4':4},\n
+                'T10':{'M1':6,'M2':1,'M3':7,'M4':4}}
+        '''
+        self.tareasBase = tareas
+        self.tareas = tareas
+        self.nombreTareas = list(tareas.keys())
+        self.nombreMaquinas = list(list(tareas.values())[0].keys())
+        self.diccioanrioTareas = []
+        self.Combinaciones = []
+        self.SecuenciasPosibles = []
+        self.Secuencias = []
+        self.TiemposProcesosSecuencias = []
+        for i in range(1,len(self.nombreMaquinas)):
+            maquinaFicticia1 = self.nombreMaquinas[0:i]
+            maquinaFicticia2 = self.nombreMaquinas[-i::]
+            tareasAuxiliar={}
+            for tarea in self.nombreTareas:
+                tareasAuxiliar[tarea] = {
+                    "-".join(maquinaFicticia1):sum([self.tareas[tarea][maquina] for maquina in maquinaFicticia1]),
+                    "-".join(maquinaFicticia2):sum([self.tareas[tarea][maquina] for maquina in maquinaFicticia2]),}
+            self.diccioanrioTareas.append(tareasAuxiliar)
+            combinaciones = self.EncontrarCombinaciones(tareasAuxiliar)
+            self.Combinaciones.append(combinaciones)
+            posibilidades = self.CalcularPosibilidades(combinaciones)
+            self.SecuenciasPosibles.append(posibilidades)
+            secuencias = self.CalcularSecuencias(posibilidades) 
+            self.Secuencias.append(secuencias)
+            tiempos = self.CalcularTiemposSecuencias(secuencias)
+            self.TiemposProcesosSecuencias.append(tiempos)
+
+    # Encontrar combinaciones posibles segun regla de Jhonson
+    def EncontrarCombinaciones(self, tareasAuxiliar):
+        Combinaciones = []
+        while tareasAuxiliar!= {} :
+            nombresMaquinas = list(list(tareasAuxiliar.values())[0].keys())
+            maximo = list(list(tareasAuxiliar.values())[0].values())[0]
+            for tarea in tareasAuxiliar.keys():
+                for maquina in nombresMaquinas:
+                    if tareasAuxiliar[tarea][maquina] < maximo:
+                        maximo = tareasAuxiliar[tarea][maquina]
+            asignacion = []
+            for tarea in tareasAuxiliar.keys():
+                if tareasAuxiliar[tarea][nombresMaquinas[0]] == maximo:
+                    asignacion.append([tarea,'I'])
+                elif tareasAuxiliar[tarea][nombresMaquinas[1]] == maximo:
+                    asignacion.append([tarea,'F'])
+            tareas = list(set([tarea[0] for tarea in asignacion]))
+            for tarea in tareas:
+                tareasAuxiliar.pop(tarea)
+            Combinaciones.append(asignacion)
+        return Combinaciones
+
+    # Calcular posibles combinaciones segun orden calculado
+    def CalcularPosibilidades(self, combinaciones):
+        SecuenciasPosibles = [[]]
+        for combinacion in combinaciones:
+            permutaciones = list(permutations(combinacion,len(combinacion)))
+            for i in range(len(permutaciones)):
+                permutaciones[i] = list(permutaciones[i])
+            auxiliar=[]
+            for secuancia in SecuenciasPosibles:
+                for posibilidad in permutaciones:
+                    auxiliar.append(secuancia+posibilidad)
+            SecuenciasPosibles = auxiliar
+        return SecuenciasPosibles
+
+    # Calcular cada una de las seceuncias a partir de combinaciones de posibilidades
+    def CalcularSecuencias(self, SecuenciasPosibles):
+        Secuencias = []
+        for secuencia in SecuenciasPosibles:
+            inicio = []
+            fin = []
+            for tarea in secuencia:
+                if tarea[1]=='F':
+                    fin.insert(0, tarea[0])
+                else:
+                    inicio.append(tarea[0])
+            Secuencias.append(inicio+fin)
+        return Secuencias
+    
+    # Calcular tiempo de cada combinacion de posibilidad
+    def CalcularTiemposSecuencias(self, Secuencias):
+        TiemposProcesosSecuencias = []
+        for secuencia in Secuencias:
+            TiemposProcesosSecuencias.append(self.CalcularTiempoProceso(secuencia))
+        return TiemposProcesosSecuencias
+
+    # Calcular tiempo de proceso para cada secuencia
+    def CalcularTiempoProceso(self, secuencia):
+        duraciones = []
+        for tarea in secuencia:
+            duraciones.append([j for j in self.tareasBase[tarea].values()])
+        matriz = [ [0 for j in i] for i in self.tareasBase.values()]
+        for i in range(len(matriz)):
+            for j in range(len(matriz[i])):
+                if i==0 and j==0:
+                    matriz[i][j] = duraciones[i][j]
+                elif i==0:
+                    matriz[i][j] = matriz[i][j-1] + duraciones[i][j]
+                elif j==0:
+                    matriz[i][j] = matriz[i-1][j] + duraciones[i][j]
+                else:
+                    matriz[i][j] = max([matriz[i][j-1],matriz[i-1][j]]) + duraciones[i][j]
+        return matriz[i][j]   

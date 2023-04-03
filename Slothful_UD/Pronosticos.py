@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import matplotlib.pyplot as plt
 
 class PromedioMovil:
@@ -197,8 +197,73 @@ class RegresionLinealSimple():
         plt.title('Regresión lineal simple')
         plt.legend()
 
-datos = [5,7,9,11,13,15,17,19,21,23,25]
-reg = RegresionLinealSimple(datos)
-reg.calcular_regresion()
-print(reg.ecuacion())
-print(reg.predecir([45,60,120,34]))
+#datos = [5,7,9,11,13,15,17,19,21,23,25]
+#reg = RegresionLinealSimple(datos)
+#reg.calcular_regresion()
+#print(reg.ecuacion())
+#print(reg.predecir([45,60,120,34]))
+    
+class SuavizacionExponencialTriple():
+    def __init__(self, datos: (List, Tuple, pd.DataFrame), alpha: float, beta: float, gamma: float, nivel_inicial: Optional[float] = None, tendencia_inicial: Optional[float] = None, estacionalidad_inicial: Optional[List[float]] = None):
+        self.datos = datos
+        # Comprobar el tipo de dato de usuario
+        if isinstance(self.datos, pd.DataFrame):
+            self.historico = self.datos.copy()
+        elif isinstance(self.datos, (list, tuple)):
+            self.historico = pd.DataFrame(self.datos)
+        else:
+            raise TypeError("El tipo de datos ingresado no es válido.")
+        self.y = np.array(self.historico.iloc[:,0])
+        self.x = np.array(self.historico.index)
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.nivel_inicial = nivel_inicial
+        self.tendencia_inicial = tendencia_inicial
+        self.estacionalidad_inicial = estacionalidad_inicial
+        self.nivel = None
+        self.tendencia = None
+        self.estacionalidad = None
+        self.m = 0
+
+    def calcular_regresion(self):
+        n = len(self.y)
+        # Inicializar los valores de nivel, tendencia y estacionalidad
+        nivel = [self.y[0]] if self.nivel_inicial is None else [self.nivel_inicial]
+        tendencia = [self.y[1] - self.y[0]] if self.tendencia_inicial is None else [self.tendencia_inicial]
+        estacionalidad = [self.y[i] - nivel[0] for i in range(n)] if self.estacionalidad_inicial is None else self.estacionalidad_inicial.copy()
+
+        # Calcular los valores de nivel, tendencia y estacionalidad para cada período
+        for i in range(1, n):
+            # Calcular los valores suavizados
+            nivel_actual = self.alpha * (self.y[i] - estacionalidad[i - 1]) + (1 - self.alpha) * (nivel[i - 1] + tendencia[i - 1]) # cambiamos - por / (self.y[i] - nivel_actual)
+            tendencia_actual = self.beta * (nivel_actual - nivel[i - 1]) + (1 - self.beta) * tendencia[i - 1]
+            estacionalidad_actual = self.gamma * (self.y[i] / nivel_actual) + (1 - self.gamma) * estacionalidad[i - 1] # cambiamos - por / (self.y[i] - nivel_actual)
+            # Agregar los valores suavizados a las listas correspondientes
+            nivel.append(nivel_actual)
+            tendencia.append(tendencia_actual)
+            estacionalidad.append(estacionalidad_actual)
+
+        # Guardar los valores de nivel, tendencia y estacionalidad como atributos de la clase
+        self.nivel = np.array(nivel)
+        self.tendencia = np.array(tendencia)
+        self.estacionalidad = np.array(estacionalidad)
+        print(self.nivel)
+        print(self.tendencia)
+        print(self.estacionalidad)
+
+
+    def predecir(self, periodos: int):
+        if self.nivel is None or self.tendencia is None or self.estacionalidad is None:
+            raise ValueError("La regresión aún no se ha calculado.")
+        # Calcular los valores de la serie suavizada para los períodos futuros
+        y_suavizado = self.nivel[-1] + np.arange(1, periodos + 1) * self.tendencia[-1] + self.estacionalidad[-self.m:][:periodos].tolist()
+        return pd.DataFrame(y_suavizado, index=np.arange(self.x[-1] + 1, self.x[-1] + periodos + 1))
+    
+datos = [3494, 3379, 3453, 3220, 3380, 3382, 3266, 3179, 3464, 3261, 3119, 3135]
+modelo = SuavizacionExponencialTriple(datos, 0.86, 0.1, 0.09)
+modelo.calcular_regresion()
+predicciones = modelo.predecir(12)
+print(predicciones)
+
+

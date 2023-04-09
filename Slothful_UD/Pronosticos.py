@@ -242,14 +242,14 @@ class SuavizacionExponencialTriple():
             los valores de los datos en el primer ciclo.
             El valor por defecto es None.
         Ejemplo:\n
-        modelo = SuavizacionExponencialTriple(datos, 0.2, 0.35, 0.4, ciclo=4,\n
-                                                tipo_nivel='mul', tipo_estacionalidad='mul', nivel_inicial=86.31,\n
-                                                tendencia_inicial=5.47, estacionalidad_inicial=[0.76,1.03,0.88,1.33])\n
-        modelo.calcular_regresion()\n
-        predicciones = modelo.predecir(4)\n
-        print(modelo.pronostico_pasado)\n
-        print(modelo.pronostico)\n
-        modelo.graficar()\n
+        modelo = SuavizacionExponencialTriple(datos, 0.2, 0.35, 0.4, ciclo=4,
+                                                tipo_nivel='mul', tipo_estacionalidad='mul', nivel_inicial=86.31,
+                                                tendencia_inicial=5.47, estacionalidad_inicial=[0.76,1.03,0.88,1.33])
+        modelo.calcular_regresion()
+        predicciones = modelo.predecir(4)
+        print(modelo.pronostico_pasado)
+        print(modelo.pronostico)
+        modelo.graficar()
         '''
         self.datos = datos
         # Comprobar el tipo de dato de usuario
@@ -351,3 +351,105 @@ class SuavizacionExponencialTriple():
 #print(modelo.pronostico_pasado)
 #print(modelo.pronostico)
 #modelo.graficar()
+
+class SuavizacionExponencialDoble():
+    def __init__(self, datos: (List, Tuple, pd.DataFrame), alpha: float = None, beta: float = None,
+                 nivel_inicial: float = None, tendencia_inicial: float = None):
+        '''
+        SuavizacionExponencialDoble(datos(df,list,tuple), alfa:float, beta:float, tendencia_inicial:float, nivel_inicial:float)\n
+        Clase que implementa el modelo de suavización exponencial doble para predecir valores futuros de una serie temporal.
+        Argumentos:\n
+        datos (List, Tuple, pd.DataFrame): Serie temporal de datos.
+        alpha (float): Parámetro de suavización para el nivel de la serie.
+        beta (float): Parámetro de suavización para la tendencia de la serie.
+        nivel_inicial (float): Valor inicial para el nivel de la serie.
+        tendencia_inicial (float): Valor inicial para la tendencia de la serie.
+        Ejemplo:\n
+        datos = [77,105,89,135,100,125,115,155,120,145,135,170]
+        modelo = SuavizacionExponencialDoble(datos, alpha=0.8, beta=0.5, nivel_inicial = 77, tendencia_inicial = 10)
+        print(modelo.calcular_suavizacion_exponencial_doble())
+        print(modelo.predecir(3))
+        modelo.graficar()
+        '''
+        self.datos = datos
+        # Comprobar el tipo de dato de usuario
+        if isinstance(self.datos, pd.DataFrame):
+            self.historico = self.datos.copy()
+        elif isinstance(self.datos, (list, tuple)):
+            self.historico = pd.DataFrame(self.datos)
+        else:
+            raise TypeError("El tipo de datos ingresado no es válido.")
+        self.x = self.historico.index
+        self.alpha = alpha
+        self.beta = beta
+        self.nivel_inicial = nivel_inicial
+        self.tendencia_inicial = tendencia_inicial
+        self.resultado = None
+        if self.alpha is None or self.beta is None:
+            raise TypeError("No se ha especificado los valores de alpha y beta.")
+        elif self.alpha < 0 or self.alpha > 1 or self.beta < 0 or self.beta > 1:
+            raise TypeError("Los valores de alpha y beta deben estar entre 0 y 1.")
+        
+    def calcular_suavizacion_exponencial_doble(self):
+        # Definir periodo de inicio de pronostioc de suavización exponencial doble
+        if self.nivel_inicial is None or self.tendencia_inicial is None: 
+            inicio_periodo =2
+        else:
+            inicio_periodo =1
+        # Inicializar la suavización exponencial doble
+        if self.nivel_inicial is not None :
+            nivel_t = self.nivel_inicial
+        else:
+            nivel_t = self.historico.iloc[1,0]
+        if self.tendencia_inicial is not None:
+            tendencia_t = self.tendencia_inicial
+        else:
+            tendencia_t = self.historico.iloc[1,0] - self.historico.iloc[0,0]
+        # Calcular la suavización exponencial doble para el número de periodos suministrados
+        if inicio_periodo == 2:
+            self.nivel = [None, nivel_t]
+            self.tendencia = [None, tendencia_t]
+            self.valores_pronostico = [None, None]
+        else:
+            self.nivel = [nivel_t]
+            self.tendencia = [tendencia_t]
+            self.valores_pronostico = [None]
+        for i in range(inicio_periodo, len(self.historico)):
+            nivel_t = self.alpha * self.historico.iloc[i,0] + (1 - self.alpha) * (self.nivel[-1] + self.tendencia[-1])
+            tendencia_t = self.beta * (nivel_t - self.nivel[-1]) + (1 - self.beta) * self.tendencia[-1]
+            pronostico_sed = self.nivel[-1] + self.tendencia[-1]
+            self.nivel.append(nivel_t)
+            self.tendencia.append(tendencia_t)
+            self.valores_pronostico.append(pronostico_sed)
+        self.pronostico_pasado = pd.DataFrame(self.valores_pronostico, index=self.x)
+        return self.pronostico_pasado
+    
+    def predecir(self, periodos: int = 1):
+        self.periodos = periodos
+        if self.nivel is None or self.tendencia is None:
+            raise ValueError("La regresión aún no se ha calculado.")
+        self.pronostico = self.pronostico_pasado.copy()
+        print(self.pronostico)
+        # Calcular los valores de la serie suavizada para los períodos futuros
+        for i in range (1, periodos + 1):
+            print(len(self.pronostico), self.nivel[-1] + i * self.tendencia[-1])
+            self.pronostico.loc[len(self.pronostico), 0] = self.nivel[-1] + i * self.tendencia[-1]
+        return self.pronostico
+    
+    # Grafica el pronóstico
+    def graficar(self):
+        plt.figure(figsize=(12, 6))
+        plt.plot(self.historico.index, self.historico.iloc[:, 0], label='Histórico')
+        plt.plot(self.pronostico.index, self.pronostico.iloc[:, 0], label='Pronóstico')
+        plt.xlabel('Fecha')
+        plt.ylabel('Valor')
+        plt.title(f'Suavización exponencial doble (alpha={self.alpha}, beta={self.beta}, {self.periodos} periodos pronosticados)')
+        plt.legend()
+        plt.show()
+
+#datos = [77,105,89,135,100,125,115,155,120,145,135,170]
+#modelo = SuavizacionExponencialDoble(datos, alpha=0.8, beta=0.5, nivel_inicial = 77, tendencia_inicial = 10)
+#print(modelo.calcular_suavizacion_exponencial_doble())
+#print(modelo.predecir(3))
+#modelo.graficar()
+

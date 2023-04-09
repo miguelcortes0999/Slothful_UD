@@ -76,7 +76,7 @@ class PromedioMovilPonderado:
         pm = PromedioMovil(df, ventana=4, pronostico=3, pesos=[0.1, 0.2, 0.3, 0.4])\n
         pm.calcular_promedio_movil()\n
         print(pm.resultado)\n
-        pm.graficar()\
+        pm.graficar()\n
         '''
         self.datos = datos
         # Comprobar el tipo de dato de usuario
@@ -146,7 +146,7 @@ class RegresionLinealSimple():
         '''
         RegresionLienalSimple(datos(df,list,tuple))\n
         Calcula la regresion lineal para una serie de datos.\n
-        Argumentos:
+        Argumentos:\n
         datos: una lista, tupla o DataFrame con los datos de la serie (el inidce del data frame sera tomado como eje x).
         Ejemplo:\n
         datos = [5,7,9,11,13,15,17,19,21,23,25]\n
@@ -204,7 +204,53 @@ class RegresionLinealSimple():
 #print(reg.predecir([45,60,120,34]))
     
 class SuavizacionExponencialTriple():
-    def __init__(self, datos: (List, Tuple, pd.DataFrame), alpha: float, beta: float, gamma: float, nivel_inicial: Optional[float] = None, tendencia_inicial: Optional[float] = None, estacionalidad_inicial: Optional[List[float]] = None):
+    def __init__(self, datos: (List, Tuple, pd.DataFrame), alpha: float, beta: float, gamma: float,
+                 tipo_nivel: str = 'adi', tipo_estacionalidad: str = 'adi', ciclo: int = None,
+                 nivel_inicial: Optional[float] = None, tendencia_inicial: Optional[float] = None,
+                 estacionalidad_inicial: Optional[float] = None):
+        '''
+        SuavizacionExponencialTriple(datos(df,list,tuple), alfa:float, beta:float, gamma float, ciclo: int, tipo_nivel:'add' or 'mul', tipo_estacionalidad:'add' or 'mul',
+        nivel_inicial=float, tendencia_inicial:float, estacionalidad_inicial: [float])\n
+        Clase para implementar un modelo de suavización exponencial triple para la realización de pronósticos.\n
+        Argumentos:\n
+                datos : list, tuple, pd.DataFrame
+            Datos para realizar el pronóstico. Puede ser una lista, tupla o DataFrame de pandas.
+        alpha : float
+            Parámetro de suavización para el nivel. Debe estar entre 0 y 1.
+        beta : float
+            Parámetro de suavización para la tendencia. Debe estar entre 0 y 1.
+        gamma : float
+            Parámetro de suavización para la estacionalidad. Debe estar entre 0 y 1.
+        tipo_nivel : str, optional
+            Tipo de suavización para el nivel, puede ser 'adi' para aditiva o 'mul' para multiplicativa.
+            El valor por defecto es 'adi'.
+        tipo_estacionalidad : str, optional
+            Tipo de suavización para la estacionalidad, puede ser 'adi' para aditiva o 'mul' para multiplicativa.
+            El valor por defecto es 'adi'.
+        ciclo : int, optional
+            Cantidad de períodos que conforman un ciclo estacional. Si no se especifica, se asume que el ciclo
+            es la longitud de los datos. El valor por defecto es None.
+        nivel_inicial : float, optional
+            Valor inicial del nivel. Si no se especifica, se calcula automáticamente como el primer valor de los datos.
+            El valor por defecto es None.
+        tendencia_inicial : float, optional
+            Valor inicial de la tendencia. Si no se especifica, se calcula automáticamente como la diferencia entre
+            el segundo y el primer valor de los datos.
+            El valor por defecto es None.
+        estacionalidad_inicial : float, optional
+            Valor inicial de la estacionalidad. Si no se especifica, se calcula automáticamente como la media de
+            los valores de los datos en el primer ciclo.
+            El valor por defecto es None.
+        Ejemplo:\n
+        modelo = SuavizacionExponencialTriple(datos, 0.2, 0.35, 0.4, ciclo=4,\n
+                                                tipo_nivel='mul', tipo_estacionalidad='mul', nivel_inicial=86.31,\n
+                                                tendencia_inicial=5.47, estacionalidad_inicial=[0.76,1.03,0.88,1.33])\n
+        modelo.calcular_regresion()\n
+        predicciones = modelo.predecir(4)\n
+        print(modelo.pronostico_pasado)\n
+        print(modelo.pronostico)\n
+        modelo.graficar()\n
+        '''
         self.datos = datos
         # Comprobar el tipo de dato de usuario
         if isinstance(self.datos, pd.DataFrame):
@@ -225,45 +271,83 @@ class SuavizacionExponencialTriple():
         self.tendencia = None
         self.estacionalidad = None
         self.m = 0
+        self.tipo_nivel = tipo_nivel
+        self.tipo_estacionalidad = tipo_estacionalidad
+        if ciclo == None:
+            self.ciclo = len(datos)
+        else:
+            if len(datos) % ciclo == 0:
+                self.ciclo = ciclo
+            else:
+                raise ('No es posible agrupar los datos en la cantidad de ciclos suministrado.')
 
     def calcular_regresion(self):
         n = len(self.y)
         # Inicializar los valores de nivel, tendencia y estacionalidad
-        nivel = [self.y[0]] if self.nivel_inicial is None else [self.nivel_inicial]
-        tendencia = [self.y[1] - self.y[0]] if self.tendencia_inicial is None else [self.tendencia_inicial]
-        estacionalidad = [self.y[i] - nivel[0] for i in range(n)] if self.estacionalidad_inicial is None else self.estacionalidad_inicial.copy()
-
+        nivel = []
+        tendencia = []
+        estacionalidad = [np.mean(self.y[i::self.ciclo]) / np.mean(self.y) for i in range(self.ciclo)] if self.estacionalidad_inicial is None else self.estacionalidad_inicial.copy()
         # Calcular los valores de nivel, tendencia y estacionalidad para cada período
-        for i in range(1, n):
+        for i in range(n):
             # Calcular los valores suavizados
-            nivel_actual = self.alpha * (self.y[i] - estacionalidad[i - 1]) + (1 - self.alpha) * (nivel[i - 1] + tendencia[i - 1]) # cambiamos - por / (self.y[i] - nivel_actual)
-            tendencia_actual = self.beta * (nivel_actual - nivel[i - 1]) + (1 - self.beta) * tendencia[i - 1]
-            estacionalidad_actual = self.gamma * (self.y[i] / nivel_actual) + (1 - self.gamma) * estacionalidad[i - 1] # cambiamos - por / (self.y[i] - nivel_actual)
+            if i != 0:
+                if self.tipo_nivel == 'adi':
+                    nivel_actual = self.alpha * (self.y[i] - estacionalidad[-self.ciclo]) + (1 - self.alpha) * (nivel[-1] + tendencia[-1]) 
+                elif self.tipo_nivel == 'mul':
+                    nivel_actual = self.alpha * (self.y[i] / estacionalidad[-self.ciclo]) + (1 - self.alpha) * (nivel[-1] + tendencia[-1])
+                else:
+                    raise TypeError('El tipo de nivel no es permitido, elija entre "adi" o "mul".')    
+                tendencia_actual = self.beta * (nivel_actual - nivel[-1]) + (1 - self.beta) * tendencia[-1]
+            else:
+                nivel_actual = self.y[0] if self.nivel_inicial is None else self.nivel_inicial
+                tendencia_actual = (self.y[1] - self.y[0]) if self.tendencia_inicial is None else self.tendencia_inicial
+            if self.tipo_estacionalidad == 'adi':
+                estacionalidad_actual = self.gamma * (self.y[i] - nivel_actual) + (1 - self.gamma) * estacionalidad[-self.ciclo]
+            elif self.tipo_estacionalidad == 'mul':
+                estacionalidad_actual = self.gamma * (self.y[i] / nivel_actual) + (1 - self.gamma) * estacionalidad[-self.ciclo] 
+            else:
+                raise TypeError('El tipo de estacionalidad no es permitido, elija entre "adi" o "mul".')      
             # Agregar los valores suavizados a las listas correspondientes
             nivel.append(nivel_actual)
             tendencia.append(tendencia_actual)
             estacionalidad.append(estacionalidad_actual)
-
         # Guardar los valores de nivel, tendencia y estacionalidad como atributos de la clase
         self.nivel = np.array(nivel)
         self.tendencia = np.array(tendencia)
         self.estacionalidad = np.array(estacionalidad)
-        print(self.nivel)
-        print(self.tendencia)
-        print(self.estacionalidad)
-
+        # Calcular valor entrenado
+        multiplicacion = np.multiply(np.ones(len(self.y)), self.tendencia )
+        suma = np.add(multiplicacion, self.nivel)
+        y_suavizado_real = np.multiply(self.estacionalidad[0:-self.ciclo],suma)
+        self.pronostico_pasado = pd.DataFrame(y_suavizado_real)
+        return self.pronostico_pasado
 
     def predecir(self, periodos: int):
         if self.nivel is None or self.tendencia is None or self.estacionalidad is None:
             raise ValueError("La regresión aún no se ha calculado.")
         # Calcular los valores de la serie suavizada para los períodos futuros
-        y_suavizado = self.nivel[-1] + np.arange(1, periodos + 1) * self.tendencia[-1] + self.estacionalidad[-self.m:][:periodos].tolist()
-        return pd.DataFrame(y_suavizado, index=np.arange(self.x[-1] + 1, self.x[-1] + periodos + 1))
+        multiplicacion = np.multiply(np.arange(1, periodos + 1), self.tendencia[-1] )
+        suma = np.add(multiplicacion, self.nivel[-1])
+        y_suavizado_pronostico = np.multiply(suma, self.estacionalidad[-periodos::])
+        self.pronostico = pd.DataFrame(y_suavizado_pronostico, index=np.arange(self.x[-1] + 1, self.x[-1] + periodos + 1))
+        self.pronostico = pd.concat([self.pronostico_pasado,self.pronostico], axis=0)
+        return self.pronostico
     
-datos = [3494, 3379, 3453, 3220, 3380, 3382, 3266, 3179, 3464, 3261, 3119, 3135]
-modelo = SuavizacionExponencialTriple(datos, 0.86, 0.1, 0.09)
-modelo.calcular_regresion()
-predicciones = modelo.predecir(12)
-print(predicciones)
-
-
+    def graficar(self):
+        plt.plot(self.historico.index, self.historico.iloc[:,0], label='Histórico')
+        plt.plot(self.pronostico.index, self.pronostico.iloc[:,0], color='orange',
+                 label='Pronostico triple con alpha,beta,gamma = '+str((self.alpha, self.beta, self.gamma)))
+        plt.xlabel('Variable independiente')
+        plt.ylabel('Variable dependiente')
+        plt.title('Suaviazación exponencial triple alpha,beta,gamma = '+str((self.alpha, self.beta, self.gamma)))
+        plt.legend()
+        plt.show()
+    
+#datos = [77,105,89,135,100,125,115,155,120,145,135,170]
+#modelo = SuavizacionExponencialTriple(datos, 0.2, 0.35, 0.4, ciclo=4, tipo_nivel='mul', tipo_estacionalidad='mul',
+#                                      nivel_inicial=86.31, tendencia_inicial=5.47, estacionalidad_inicial=[0.76,1.03,0.88,1.33])
+#modelo.calcular_regresion()
+#predicciones = modelo.predecir(4)
+#print(modelo.pronostico_pasado)
+#print(modelo.pronostico)
+#modelo.graficar()
